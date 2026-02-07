@@ -121,11 +121,26 @@
       @close="showDeleteModal = false"
       @confirm="handleDeleteConfirm"
     />
+
+    <div
+      v-if="showToast"
+      class="fixed left-1/2 top-5 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl px-5 py-3 shadow-2xl ring-1 ring-black/10 backdrop-blur"
+      :class="toastClass"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/10">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+      <span class="text-sm font-semibold tracking-wide">{{ toastMessage }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useWorkerStore } from '@/stores/workerStore';
 import AppHeader from '@/components/AppHeader.vue';
 import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
@@ -143,6 +158,10 @@ const showWorkerModal = ref(false);
 const workerModalMode = ref<'create' | 'edit'>('create');
 const selectedWorker = ref<WorkerResponse | null>(null);
 const showDeleteModal = ref(false);
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'create' | 'update'>('create');
+let toastTimeout: number | undefined;
 
 onMounted(() => {
   workerStore.fetchWorkers();
@@ -180,8 +199,10 @@ const confirmDelete = (worker: WorkerResponse) => {
 const handleWorkerSubmit = async (payload: CreateWorkerRequest | UpdateWorkerRequest) => {
   if (workerModalMode.value === 'edit' && 'id' in payload) {
     await workerStore.updateWorker(payload.id, payload);
+    triggerToast('Trabajador actualizado', 'update');
   } else {
     await workerStore.createWorker(payload as CreateWorkerRequest);
+    triggerToast('Trabajador creado', 'create');
   }
   showWorkerModal.value = false;
 };
@@ -191,4 +212,23 @@ const handleDeleteConfirm = async () => {
   await workerStore.deleteWorker(selectedWorker.value.id);
   showDeleteModal.value = false;
 };
+
+const triggerToast = (message: string, type: 'create' | 'update') => {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+  toastTimeout = window.setTimeout(() => {
+    showToast.value = false;
+  }, 2500);
+};
+
+const toastClass = computed(() => {
+  if (toastType.value === 'update') {
+    return 'bg-blue-600 text-white';
+  }
+  return 'bg-blue-200 text-black';
+});
 </script>

@@ -116,6 +116,8 @@
               <div v-if="photoPreview" class="mt-3">
                 <img :src="photoPreview" alt="Preview" class="h-16 w-16 rounded-lg object-cover" />
               </div>
+              <div v-if="uploadingPhoto" class="text-xs text-blue-600">Subiendo imagen...</div>
+              <div v-if="photoError" class="text-xs text-red-600">{{ photoError }}</div>
             </label>
           </div>
 
@@ -127,8 +129,8 @@
             >
               Cancelar
             </button>
-            <button type="submit" class="btn-primary px-5">
-              Guardar
+            <button type="submit" class="btn-primary px-5" :disabled="uploadingPhoto">
+              {{ uploadingPhoto ? 'Subiendo...' : 'Guardar' }}
             </button>
           </div>
         </form>
@@ -166,6 +168,11 @@ const emit = defineEmits<{
 }>();
 
 const photoPreview = ref<string | null>(null);
+const uploadingPhoto = ref(false);
+const photoError = ref('');
+
+const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'ds8hs2ux6';
+const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
 
 const emptyForm = (): FormState => ({
   firstName: '',
@@ -219,16 +226,34 @@ const handleSubmit = () => {
   emit('submit', { ...form.value });
 };
 
-const handlePhotoChange = (event: Event) => {
+const handlePhotoChange = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = () => {
-    const result = typeof reader.result === 'string' ? reader.result : null;
-    photoPreview.value = result;
-    form.value.photo = result;
-  };
-  reader.readAsDataURL(file);
+  uploadingPhoto.value = true;
+  photoError.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = data?.error?.message || 'Error al subir la imagen a Cloudinary';
+      throw new Error(message);
+    }
+    photoPreview.value = data.secure_url || data.url || null;
+    form.value.photo = photoPreview.value;
+  } catch (error: any) {
+    photoError.value = error?.message || 'No se pudo subir la imagen.';
+  } finally {
+    uploadingPhoto.value = false;
+  }
 };
 </script>
