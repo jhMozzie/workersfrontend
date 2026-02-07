@@ -42,9 +42,10 @@ export const useWorkerStore = defineStore('workers', () => {
       );
     }
 
-    // Filtro por sexo (si implementas este campo en tu API)
+    // Filtro por sexo
     if (filters.value.sexo && filters.value.sexo !== 'Todos') {
-      // filtered = filtered.filter(w => w.sexo === filters.value.sexo);
+      const sexo = filters.value.sexo.toUpperCase();
+      filtered = filtered.filter((w) => (w.gender || '').toUpperCase() === sexo);
     }
 
     pagination.value.totalItems = filtered.length;

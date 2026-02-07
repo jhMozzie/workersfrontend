@@ -17,7 +17,9 @@
           <tr
             v-for="worker in workers"
             :key="worker.id"
-            class="hover:bg-gray-50 transition-colors"
+            class="transition-colors"
+            :class="getRowHoverClass(worker.gender)"
+            :style="getRowStyle(worker.gender)"
           >
             <td class="px-6 py-4 text-sm text-gray-900 font-medium">
               {{ worker.firstName }}
@@ -104,5 +106,29 @@ const formatDate = (dateString: string): string => {
   const month = months[date.getMonth()];
   const year = date.getFullYear();
   return `${day} ${month}, ${year}`;
+};
+
+const normalizeGender = (gender: string): string => (gender || '').trim().toUpperCase();
+
+const getRowStyle = (gender: string): { backgroundColor?: string } => {
+  const value = normalizeGender(gender);
+  if (value === 'M' || value === 'MASCULINO' || value === 'HOMBRE') {
+    return { backgroundColor: '#dbeafe' };
+  }
+  if (value === 'F' || value === 'FEMENINO' || value === 'MUJER' || value === 'FEMALE') {
+    return { backgroundColor: '#ffedd5' };
+  }
+  return {};
+};
+
+const getRowHoverClass = (gender: string): string => {
+  const value = normalizeGender(gender);
+  if (value === 'M' || value === 'MASCULINO' || value === 'HOMBRE') {
+    return 'hover:bg-blue-200';
+  }
+  if (value === 'F' || value === 'FEMENINO' || value === 'MUJER' || value === 'FEMALE') {
+    return 'hover:bg-orange-200';
+  }
+  return 'hover:bg-gray-50';
 };
 </script>
